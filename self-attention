@@ -1,0 +1,43 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class NaiveSelfAttention(nn.Module):
+    def __init__(self, input_dim):
+        super(NaiveSelfAttention, self).__init__()
+        self.query = nn.Linear(input_dim, input_dim)
+        self.key = nn.Linear(input_dim, input_dim)
+        self.value = nn.Linear(input_dim, input_dim)
+
+    def forward(self, x):
+        # x shape: (batch_size, sequence_length, input_dim)
+        batch_size, seq_len, _ = x.size()
+
+        # Compute query, key, and value matrices
+        q = self.query(x)  # Shape: (batch_size, sequence_length, input_dim)
+        k = self.key(x)    # Shape: (batch_size, sequence_length, input_dim)
+        v = self.value(x)  # Shape: (batch_size, sequence_length, input_dim)
+
+        # Compute attention scores
+        attn_scores = torch.matmul(q, k.transpose(1, 2))  # Shape: (batch_size, sequence_length, sequence_length)
+        attn_scores = attn_scores / torch.sqrt(torch.tensor(float(input_dim)).to(attn_scores.device))
+
+        # Compute attention probabilities
+        attn_probs = F.softmax(attn_scores, dim=-1)  # Shape: (batch_size, sequence_length, sequence_length)
+
+        # Compute the attended output
+        attn_output = torch.matmul(attn_probs, v)  # Shape: (batch_size, sequence_length, input_dim)
+
+        return attn_output
+
+# Example usage
+input_dim = 64
+sequence_length = 10
+batch_size = 8
+
+x = torch.randn(batch_size, sequence_length, input_dim)
+attention = NaiveSelfAttention(input_dim)
+output = attention(x)
+
+print("Input shape:", x.shape)
+print("Output shape:", output.shape)
